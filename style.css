@@ -33,3 +33,7 @@ body {
 .footer a {
 	color: white;
 }
+
+.center {
+	text-align: center;
+}
