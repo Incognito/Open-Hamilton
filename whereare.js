@@ -54,9 +54,6 @@
 
           switch (typeof defaults[i]) {
             case "null"     :
-              //Deal with defaults that are null, do opposite merge style.
-              options[i] =  defaults[i] || conf[i];
-              break;
             case "boolean"  :
             case "number"   :
             case "string"   :
