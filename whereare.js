@@ -41,8 +41,19 @@
         Works recursively, assignment emulates XOR.
   */
   var confMerge= function(conf, defaults){
-    //Options will be the new set of values.
-    var options = {};
+    //Options will be the new set of values. Need to determine if Options is array or object.
+    if (conf.length == defaults.length) {
+      if (defaults.length === "undefined") {
+        //Oprtions is an object.
+        var options = {};
+      }else {
+        //Oprtions is an array.
+        var options = [];
+      }
+    } else {
+      //You can't merge an array and an object with each-other.
+      return defaults;
+    }
 
     //Cycle through all objects in default
     for (var i in defaults) {
@@ -110,7 +121,7 @@
     /*
       Todo. build URL based on options
     */
-    
+    var baseURL = "http://maps.googleapis.com/maps/api/staticmap?";
     var ele;
     var param="http://maps.googleapis.com/maps/api/staticmap?center=43.24895389686911,-79.86236572265625&zoom=11&size=400x400&sensor=false";
     
