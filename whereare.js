@@ -34,8 +34,59 @@
 */
 
 (function(conf){
+  
+  /* Retruns object that parses config options and default options from a JSON array.
+      Attemps to merge: over-ride default with config values, ignore options from config
+      that wern't defined in defaults.
+        Works recursively.
+  */
+  var configMerge= function(conf, defaults){
+    //Options will be the new set of values.
+    var options = {};
+    
+    for (i in defaults) {
+      if (defaults.hasOwnProperty(i)) {
+        
+      }
+    }
+    return options;
+  };
+  
+  
+  /* Returns IMG Node with generated static maps from Google's "Static Maps APIv2"
+        http://code.google.com/apis/maps/documentation/staticmaps/
+      Input is documented on GitHub with the rest of this project, 
+      but in the same design of the defaults inside the function.
+  */
+  var buildStaticGoogleMap= function(conf){
+    var options = confMerge(conf, {
+      center   : [0,0],
+      zoom     : 11,
+      sensor   : false,
+      size     : [100,100],
+      scale    : 2,
+      maptype  : "roadmap", //Pick from: roadmap, satellite, terrain, hybrid
+      style    : "", //http://code.google.com/apis/maps/documentation/staticmaps/#StyledMaps
+      markers  : "", //http://code.google.com/apis/maps/documentation/staticmaps/#Markers
+      path     : "", //http://code.google.com/apis/maps/documentation/staticmaps/#Paths
+      visible  : ""  //http://code.google.com/apis/maps/documentation/staticmaps/#Viewports
+    });
+
+    /*
+      Todo. build URL based on options
+    */
+    
+    var ele;
+    var param="http://maps.googleapis.com/maps/api/staticmap?center=43.24895389686911,-79.86236572265625&zoom=11&size=400x400&sensor=false";
+    
+    ele = document.createElement("img");
+    ele.src= param;
+    ele.alt= "Loading static map preloader";
+    return ele;
+  };
 
   /* Configure display options */
+  
   var defaults = {
     /* Configure layers to put in this impelmentation 
     Layers are an array of objects that contain groups of data sets
@@ -84,6 +135,20 @@
   };
   
   /*
+  todo: something that runs options over defaults, returns settings.
+  */
+  var settings = defaults;
+  
+  /*
+  Todo: Build the divs based on settings.
+  load from image API first...
+  when JS api is ready, replace... (if device supports google interactive maps).
+  */
+  
+  document.write("<div id='mapPlugin'></div>");
+  document.getElementById("mapPlugin").appendChild(buildStaticGoogleMap());
+  
+  /*
   1) beam in content
   2) run conf or defaults
   3) draw divs
@@ -97,4 +162,3 @@
   //Configuration
 });
 
-document.write("blah...");
