@@ -38,15 +38,53 @@
   /* Retruns object that parses config options and default options from a JSON array.
       Attemps to merge: over-ride default with config values, ignore options from config
       that wern't defined in defaults.
-        Works recursively.
+        Works recursively, assignment emulates XOR.
   */
-  var configMerge= function(conf, defaults){
+  var confMerge= function(conf, defaults){
     //Options will be the new set of values.
     var options = {};
-    
-    for (i in defaults) {
+
+    //Cycle through all objects in default
+    for (var i in defaults) {
+      //Ensure object exits
       if (defaults.hasOwnProperty(i)) {
-        
+
+        //If this was listed in the conf
+        if (conf.hasOwnProperty(i)) {
+
+          switch (typeof defaults[i]) {
+            case "null"     :
+              //Deal with defaults that are null, do opposite merge style.
+              options[i] =  defaults[i] || conf[i];
+              break;
+            case "boolean"  :
+            case "number"   :
+            case "string"   :
+              //Deal with bool/num/str
+              options[i] = conf[i] || defaults[i];
+              break;
+
+            case "function" :
+              //Deal with functions
+              options[i] = conf[i] || defaults[i];
+              break;
+
+            case "object"   :
+              //Deal with objects and arrays
+              options[i] = confMerge(conf[i], defaults[i]) || defaults[i];
+              break;
+
+            default    :
+            case "undefined":
+            case "xml"      :
+              //Deal with weird stuff
+              options[i] = null;
+              break;
+          }
+        //If this wasn't listed in the conf, assign default
+        } else {
+          options[i] = defaults[i];
+        }
       }
     }
     return options;
@@ -119,12 +157,12 @@
       "width"   : 400,        /* Width  as Pixels as an int */
       "sideBarWidth"  : (25/100),   /* Percentage of width.height to be used for side-bar (decimals between 0 and 1.)*/
       "sideBarPosition" : "left",   /* "left", "right", "top", "bottom" of the box, where the map appears opposite to this */
-      "style" : "white",        /* Style of the box. See style object for style types, or import your own style. */
+      "style" : "white"       /* Style of the box. See style object for style types, or import your own style. */
     },
     /* Configuration for google map at time of intialization */
     "map" : {
       "zoom"  : 11,
-      "focus" : [43.24895389686911, -79.86236572265625],
+      "focus" : [43.24895389686911, -79.86236572265625]
     },
     /* functions for callback features */
     "callbacks" : {
