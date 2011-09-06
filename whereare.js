@@ -1,6 +1,6 @@
 /*
   WhereAre
-    The widget to help show where things are on google maps. Extensable for other uses.
+    The widget to help build things with google maps JS APIv3 and Static APIv2.
 
     ..........................
     ..........................
@@ -33,26 +33,26 @@
 
 */
 
-(function(conf){
-  
+(function(conf) {
   /* Retruns object that parses config options and default options from a JSON array.
       Attemps to merge: over-ride default with config values, ignore options from config
       that wern't defined in defaults.
         Works recursively, assignment emulates XOR.
   */
-  var confMerge= function(conf, defaults){
+  var confMerge= function(conf, defaults) {
     //Options will be the new set of values. Need to determine if Options is array or object.
-    if (conf.length == defaults.length) {
+    var options = {};
+    if ((conf == "[object Array]") && (defaults == "[object Array]")) {
+      //You can't merge an array and an object with each-other.
+      return conf || defaults;
+    } else {
       if (defaults.length === "undefined") {
         //Oprtions is an object.
-        var options = {};
+        options = {};
       }else {
         //Oprtions is an array.
-        var options = [];
+        options = [];
       }
-    } else {
-      //You can't merge an array and an object with each-other.
-      return defaults;
     }
 
     //Cycle through all objects in default
@@ -62,7 +62,6 @@
 
         //If this was listed in the conf
         if (conf.hasOwnProperty(i)) {
-
           switch (typeof defaults[i]) {
             case "null"     :
             case "boolean"  :
@@ -79,10 +78,12 @@
 
             case "object"   :
               //Deal with objects and arrays
+			  console.log(i + "\t" + conf[i]  + "\t" + defaults[i])
               options[i] = confMerge(conf[i], defaults[i]) || defaults[i];
+			  console.log(options[i]);
               break;
 
-            default    :
+            default         :
             case "undefined":
             case "xml"      :
               //Deal with weird stuff
@@ -106,38 +107,50 @@
   */
   var buildStaticGoogleMap= function(conf){
     var options = confMerge(conf, {
-      center   : [0,0],
-      zoom     : 11,
-      sensor   : false,
-      size     : [100,100],
-      scale    : 2,
-      maptype  : "roadmap", //Pick from: roadmap, satellite, terrain, hybrid
+      center   : [43.24895389686911, -79.86236572265625],  //Geographic coordinates (I haven't built in support for address strings)
+      zoom     : 11,                                       //Zoom level on the map.
+      sensor   : false,                                    //Sensor should be false unless on GPS enabled device
+      size     : [100,100],                                //Pixel size of output map
+      scale    : 1,                                        //Image scale (ie, strech resolution quality)
+      maptype  : "roadmap",                                //Pick from: roadmap, satellite, terrain, hybrid
+      //The next four return string literals of whatever was provided, as they can be very complex.
       style    : "", //http://code.google.com/apis/maps/documentation/staticmaps/#StyledMaps
       markers  : "", //http://code.google.com/apis/maps/documentation/staticmaps/#Markers
       path     : "", //http://code.google.com/apis/maps/documentation/staticmaps/#Paths
       visible  : ""  //http://code.google.com/apis/maps/documentation/staticmaps/#Viewports
     });
 
-    /*
-      Todo. build URL based on options
-    */
     var baseURL = "http://maps.googleapis.com/maps/api/staticmap?";
+    for (var i in options) {
+      if (options.hasOwnProperty(i)) {
+        baseURL += i + "=";
+        //Manage special case encoding, ie, center is one param that is encoded as 100x100, rather than individual x/y coords.
+        switch (i) {
+          case "center":
+            baseURL += options[i][0] + "," +options[i][1];
+            break;
+          case "size":
+            baseURL += options[i][0] + "x" +options[i][1];
+            break;
+          default:
+            baseURL += options[i];
+        }
+          baseURL += "&";
+      }
+    }
+    //Crete the dom node and return the node to be used elsewhere.
     var ele;
-    var param="http://maps.googleapis.com/maps/api/staticmap?center=43.24895389686911,-79.86236572265625&zoom=11&size=400x400&sensor=false";
-    
     ele = document.createElement("img");
-    ele.src= param;
+    ele.src= baseURL;
     ele.alt= "Loading static map preloader";
     return ele;
   };
 
   /* Configure display options */
-  
-  var defaults = {
+  var options = confMerge(conf, {
     /* Configure layers to put in this impelmentation 
     Layers are an array of objects that contain groups of data sets
       Groups hold arrays of data lables and Fusion Table IDs
-    
     */
     "layers" : [
       { "Water"   : [
@@ -162,7 +175,7 @@
     /* Configure display options */
     "display" : {
       "height"  : 400,        /* Height as Pixels as an int */
-      "width"   : 400,        /* Width  as Pixels as an int */
+      "width"   : 960,        /* Width  as Pixels as an int */
       "sideBarWidth"  : (25/100),   /* Percentage of width.height to be used for side-bar (decimals between 0 and 1.)*/
       "sideBarPosition" : "left",   /* "left", "right", "top", "bottom" of the box, where the map appears opposite to this */
       "style" : "white"       /* Style of the box. See style object for style types, or import your own style. */
@@ -170,7 +183,7 @@
     /* Configuration for google map at time of intialization */
     "map" : {
       "zoom"  : 11,
-      "focus" : [43.24895389686911, -79.86236572265625]
+      "center" : [43.24895389686911, -79.86236572265625]
     },
     /* functions for callback features */
     "callbacks" : {
@@ -178,26 +191,55 @@
       "success" : function(){},
       "error"   : function(){}
     }
-  };
-  
-  /*
-  todo: something that runs options over defaults, returns settings.
-  */
-  var settings = defaults;
+  });
   
   /*
   Todo: Build the divs based on settings.
   load from image API first...
   when JS api is ready, replace... (if device supports google interactive maps).
   */
+  console.log("-------------------------------")
+  var sideBarSize = [];
+  var mapSize = [];
+  switch (options.display.sideBarPosition) {
+    case "right" :
+      mapSize[0]     = (Math.floor(options.display.width * (1 - options.display.sideBarWidth)));
+      mapSize[1]     = (options.display.height);
+      sideBarSize[0] = (Math.ceil(options.display.width  * options.display.sideBarWidth));
+      sideBarSize[1] = (options.display.height);
+      break;
+    case "top"   :
+      mapSize[0]     = (Math.floor(options.display.height * (1 - options.display.sideBarWidth)));
+      mapSize[1]     = (options.display.width);
+      sideBarSize[0] = (Math.ceil(options.display.height  * options.display.sideBarWidth));
+      sideBarSize[1] = (options.display.width);
+      break;
+    case "bottom":
+      mapSize[0]     = (Math.floor(options.display.height * (1 - options.display.sideBarWidth)));
+      mapSize[1]     = (options.display.width);
+      sideBarSize[0] = (Math.ceil(options.display.height  * options.display.sideBarWidth));
+      sideBarSize[1] = (options.display.width);
+      break;
+    default:
+    case "left"  :
+      mapSize[0]     = (Math.floor(options.display.width * (1 - options.display.sideBarWidth)));
+      mapSize[1]     = (options.display.height);
+      sideBarSize[0] = (Math.ceil(options.display.width  * options.display.sideBarWidth));
+      sideBarSize[1] = (options.display.height);
+      break;
+  }
   
   document.write("<div id='mapPlugin'></div>");
-  document.getElementById("mapPlugin").appendChild(buildStaticGoogleMap());
+  document.getElementById("mapPlugin").appendChild(buildStaticGoogleMap({
+    center   : options.map.center,
+    zoom     : options.map.zoom,
+    size     : mapSize
+  }));
   
   /*
   1) beam in content
   2) run conf or defaults
-  3) draw divs
+  3) draw divs -- Can I check script elements instead of running doc write? Check that...
   4) Maps initalize
   5) Layers
   6) ????
