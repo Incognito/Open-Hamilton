@@ -37,3 +37,16 @@ body {
 .center {
     text-align: center;
 }
+
+
+#mapPlugin  {
+    border: 1px solid #000000;
+    overflow: auto;
+    width: 100%
+}
+#mapPlugin div.mapViewport {float: left;
+    width: 720px;
+}
+#mapPlugin div.mapControls {float: left;
+    width: 220px;
+}

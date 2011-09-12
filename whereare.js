@@ -34,6 +34,8 @@
 */
 
 (function(conf) {
+  /* This will be required regardless-- todo: 1) name conventions, 2) css reset, 3) see if I can use last-run-script tag instead of document.write()... */
+  document.write("<div id='mapPlugin'></div>");
   /* Retruns object that parses config options and default options from a JSON array.
       Attemps to merge: over-ride default with config values, ignore options from config
       that wern't defined in defaults.
@@ -78,9 +80,7 @@
 
             case "object"   :
               //Deal with objects and arrays
-			  console.log(i + "\t" + conf[i]  + "\t" + defaults[i])
               options[i] = confMerge(conf[i], defaults[i]) || defaults[i];
-			  console.log(options[i]);
               break;
 
             default         :
@@ -98,7 +98,6 @@
     }
     return options;
   };
-  
   
   /* Returns IMG Node with generated static maps from Google's "Static Maps APIv2"
         http://code.google.com/apis/maps/documentation/staticmaps/
@@ -153,23 +152,62 @@
       Groups hold arrays of data lables and Fusion Table IDs
     */
     "layers" : [
-      { "Water"   : [
-        { "Beach"    : 1 },
-        { "Outdoor Pool" : 1 },
-        { "Indoor Pool"  : 1 },
-        { "Splash Pad"   : 1 },
-        { "Wading Pool"  : 1 }
+      { "name" : "Water",
+        "data"   : [
+        {
+          "name" : "Beach",
+          "table" : 1 
+        },
+        {
+          "name" : "Outdoor Pool",
+          "table" : 1 
+        },
+        {
+          "name" : "Indoor Pool",
+          "table" : 1 
+        },
+        {
+          "name" : "Splash Pad",
+          "table" : 1 
+        },
+        {
+          "name" : "Wading Pool",
+          "table" : 1
+        }
       ]},
-      {"Parks"   : [
-        { "Parks" : 1},
-        { "Waterfalls" : 1},
-        { "Conservation" : 1},
-        { "Trails" : 1}
+      { "name" : "Parks",
+        "data"   : [
+        {
+          "name" :  "Parks",
+          "table" : 1
+        },
+        {
+          "name" :  "Waterfalls",
+          "table" : 1
+        },
+        {
+          "name" :  "Conservation",
+          "table" : 1
+        },
+        {
+          "name" :  "Trails",
+          "table" : 1
+        }
       ]},
-      { "Bus Stops" : [
-        { "HSR"  : 1},
-        { "B-Line" : 1},
-        { "GO"   : 1}
+      { "name" : "Bus Stops",
+        "data"   : [
+        {
+          "name" : "HSR",
+          "table" : 1
+        },
+        {
+          "name" : "B-Line",
+          "table" : 1
+        },
+        {
+          "name" : "GO",
+          "table" : 1
+        }
       ]}
     ],
     /* Configure display options */
@@ -198,7 +236,6 @@
   load from image API first...
   when JS api is ready, replace... (if device supports google interactive maps).
   */
-  console.log("-------------------------------")
   var sideBarSize = [];
   var mapSize = [];
   switch (options.display.sideBarPosition) {
@@ -229,13 +266,54 @@
       break;
   }
   
-  document.write("<div id='mapPlugin'></div>");
-  document.getElementById("mapPlugin").appendChild(buildStaticGoogleMap({
+  /*Base elements that will hold the widget */
+  var baseEle =  document.createDocumentFragment();
+  var staticMapIMG = buildStaticGoogleMap({
     center   : options.map.center,
     zoom     : options.map.zoom,
     size     : mapSize
-  }));
+  });
   
+  var mapHolder = document.createElement("div");
+  var sideBar   = document.createElement("div");
+  
+  sideBar.className   = "mapControls"
+  mapHolder.className = "mapViewport"
+  
+  mapHolder.appendChild(staticMapIMG);
+  
+  switch (options.display.sideBarPosition) {
+    case "top"   :
+    case "left"  :
+      baseEle.appendChild(sideBar);
+      baseEle.appendChild(mapHolder);
+      break;
+    default: 
+    case "bottom":
+    case "right" :
+      baseEle.appendChild(mapHolder);
+      baseEle.appendChild(sideBar);
+      break;
+  }
+  
+  /*Generate menu HTML and buttons, returns element to append child to sideBar*/
+  sideBar.appendChild((function() {
+    var subList, listItem, subListItem;
+    var mainList = document.createElement("ul");
+    for (var i=0; i<options.layers.length; i++) {
+      listItem = document.createElement("li");
+      listItem.appendChild(document.createTextNode(options.layers[i].name));
+      subList = document.createElement("ul")
+      for (var j=0; j<options.layers[i].data.length; j++) {
+        subListItem = document.createElement("li");
+        subListItem.appendChild(document.createTextNode(options.layers[i].data[j].name));
+        subList.appendChild(subListItem);
+      }
+      listItem.appendChild(subList)
+      mainList.appendChild(listItem);
+    }
+    return mainList
+  })());
   /*
   1) beam in content
   2) run conf or defaults
@@ -245,7 +323,7 @@
   6) ????
   7) Profit!
   */
-
+  document.getElementById("mapPlugin").appendChild(baseEle);
 })({
   //Configuration
 });
